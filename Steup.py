@@ -8,22 +8,92 @@ from telethon.tl.functions.channels import GetParticipantsRequest, InviteToChann
 from telethon.tl.types import ChannelParticipantsSearch, InputPeerEmpty
 from telethon.errors import SessionPasswordNeededError, PasswordHashInvalidError
 
-api_id = "20571351"
-api_hash = "c5ec13176dffebee494d33ba87fe7083"
-phoneNumber = "94789991578"
 all_participants = []
+
+class logIn():
+    def __init__(self):
+        self.__api_id = None
+        self.__api_hash = None
+        self.__phoneNumber = None
+        self.__private_path = ".\Save CSV(default)\privateDetails.csv"
+
+    def __call__(self):
+        if not os.path.isfile(self.__private_path):
+            self.enter_api_ID()
+            self.enter_api_hash()
+            self.enter_phone_number()
+
+            self.write_private_details()
+        else:
+            self.read_private_details()
+
+    def enter_api_ID(self):
+        self.__api_id = str(input("Enter your api ID: "))
+    def enter_api_hash(self):
+        self.__api_hash = input("Enter your api hash: ")
+    def enter_phone_number(self):
+        self.__phoneNumber = str(input("Enter your phone number(9477XXXXXXX): "))
+
+    def get_api_ID(self):
+        return self.__api_id
+    def get_api_hash(self):
+        return self.__api_hash
+    def get_phone_number(self):
+        return self.__phoneNumber
+
+    def write_private_details(self):
+        privateUserData = [self.__api_id, self.__api_hash, self.__phoneNumber]
+
+        if not os.path.isfile(self.__private_path):
+            new_private_user_data = [["api_ID", "api_hash", "Phone Number"], privateUserData]
+
+            with open(self.__private_path, "w", newline = "") as privateFile:
+                csvWrite = csv.writer(privateFile)
+                csvWrite.writerows(new_private_user_data)
+        else:
+            with open(self.__private_path, "a", newline = "") as privateFile:
+                csvWrite = csv.writer(privateFile)
+                csvWrite.writerows(privateUserData)
+
+    def read_private_details(self):
+        with open(self.__private_path, "r") as oldPrivateFile:
+            csvRead = csv.reader(oldPrivateFile)
+
+            oldPrivateData = []
+            for row in csvRead:
+                oldPrivateData.append(row)
+
+        if (input("Do you wanna change the account(y/n)").lower() == "y"):
+            selectedNumber = self.append_private_details(oldPrivateData)
+        else:
+            selectedNumber = 1
+
+        self.__api_id = oldPrivateData[selectedNumber][0]
+        self.__api_hash = oldPrivateData[selectedNumber][1]
+        self.__phoneNumber = oldPrivateData[selectedNumber][2]
+
+
+    def append_private_details(self, oldPrivateData):
+        for i in range(len(oldPrivateData)):
+            print(f"|{i}| {oldPrivateData[i]} |")
+            if i == 0:
+                print("\r" + "-"* os.get_terminal_size().columns, end="", flush = True)
+        select = int(input("Enter the account row number: "))
+
+        return select
+
 
 async def main():
 
     # create the TelegramClient with the new event loop
-    client = TelegramClient(phoneNumber,api_id, api_hash)
+    client = TelegramClient(login.get_phone_number(), login.get_api_ID(), login.get_api_hash())
     await client.connect()
 
     if not await client.is_user_authorized():
         await client.send_code_request(phoneNumber)
 
         try:
-           await client.sign_in(phoneNumber, input("Enter the Code: "))
+           await client.sign_in(phoneNumber, input("Enter the Login code(check you telegram): "))
 
         except SessionPasswordNeededError:
 
@@ -94,7 +164,7 @@ def saveCSV(fileName, users, path = ""):
             userData.append([user.id, user.username, user.phone, user.first_name, user.last_name])
 
         # writing to CSV new File
-        with open(filePath, "w", encoding="utf-8") as csvUserNewFile:
+        with open(filePath, "w", encoding = "utf-8", newline = "") as csvUserNewFile:
             csvWrite = csv.writer(csvUserNewFile)
             csvWrite.writerows(userData)
 
@@ -104,19 +174,22 @@ def saveCSV(fileName, users, path = ""):
         for user in users:
             userData.append([user.id, user.username, user.phone, user.first_name, user.last_name])
 
-        with open(filePath, "a", encoding="utf-8") as csvUserOldFile:
+        with open(filePath, "a", encoding = "utf-8", newline = "") as csvUserOldFile:
             csvWrite = csv.writer(csvUserOldFile)
             csvWrite.writerows(userData)
 
         print(f"Successfully write user data to old '{filePath}'")
 
 # Run the main function as an asyncio task
+login = logIn()
+login()
 asyncio.run(main())
 
 file_name = input("Enter the CSV file name: ")
-path = input("Enter file path(Just enter to set default):")
+path = input("Enter file path(Just enter to set default): ")
 
 saveCSV(file_name, all_participants, path)
+
 
 #numberOfUsers = 0
 #try:
