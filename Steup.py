@@ -20,7 +20,7 @@ async def main():
     await client.connect()
 
     if not await client.is_user_authorized():
-        client.send_code_request(phoneNumber)
+        await client.send_code_request(phoneNumber)
 
         try:
            await client.sign_in(phoneNumber, input("Enter the Code: "))

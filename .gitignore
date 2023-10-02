@@ -1,6 +1,9 @@
 # Ignore private files from telegrame
 *.session
 
+# Ignore output data files
+Save CSV(default)/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
