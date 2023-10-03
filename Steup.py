@@ -15,13 +15,20 @@ class logIn():
         self.__api_id = None
         self.__api_hash = None
         self.__phoneNumber = None
+        self.__accountName = None
         self.__private_path = ".\Save CSV(default)\privateDetails.csv"
 
     def __call__(self):
+        os.system("cls")
+        title = "Login Page"
+        halfColumns = int((os.get_terminal_size().columns - len(title)) / 2)
+        print("\r" + "-" * halfColumns + title + "-" * halfColumns , end = "", flush = True)
+
         if not os.path.isfile(self.__private_path):
             self.enter_api_ID()
             self.enter_api_hash()
             self.enter_phone_number()
+            self.enter_account_name()
 
             self.write_private_details()
         else:
@@ -33,6 +40,8 @@ class logIn():
         self.__api_hash = input("Enter your api hash: ")
     def enter_phone_number(self):
         self.__phoneNumber = str(input("Enter your phone number(9477XXXXXXX): "))
+    def enter_account_name(self):
+        self.__accountName = input("Enter name for you account(only for recognize): ");
 
     def get_api_ID(self):
         return self.__api_id
@@ -40,12 +49,14 @@ class logIn():
         return self.__api_hash
     def get_phone_number(self):
         return self.__phoneNumber
+    def get_account_name(self):
+        return self.__accountName
 
     def write_private_details(self):
-        privateUserData = [self.__api_id, self.__api_hash, self.__phoneNumber]
+        privateUserData = [self.__api_id, self.__api_hash, self.__phoneNumber, self.__accountName]
 
         if not os.path.isfile(self.__private_path):
-            new_private_user_data = [["api_ID", "api_hash", "Phone Number"], privateUserData]
+            new_private_user_data = [["api_ID", "api_hash", "Phone Number", "Account Name"], privateUserData]
 
             with open(self.__private_path, "w", newline = "") as privateFile:
                 csvWrite = csv.writer(privateFile)
@@ -53,7 +64,7 @@ class logIn():
         else:
             with open(self.__private_path, "a", newline = "") as privateFile:
                 csvWrite = csv.writer(privateFile)
-                csvWrite.writerows(privateUserData)
+                csvWrite.writerows([privateUserData])
 
     def read_private_details(self):
         with open(self.__private_path, "r") as oldPrivateFile:
@@ -63,7 +74,7 @@ class logIn():
             for row in csvRead:
                 oldPrivateData.append(row)
 
-        if (input("Do you wanna change the account(y/n)").lower() == "y"):
+        if (input("Do you wanna change the account(just press enter key for default)(y): ").lower() == "y"):
             selectedNumber = self.append_private_details(oldPrivateData)
         else:
             selectedNumber = 1
@@ -71,6 +82,7 @@ class logIn():
         self.__api_id = oldPrivateData[selectedNumber][0]
         self.__api_hash = oldPrivateData[selectedNumber][1]
         self.__phoneNumber = oldPrivateData[selectedNumber][2]
+        self.__accountName = oldPrivateData[selectedNumber][3]
 
 
     def append_private_details(self, oldPrivateData):
@@ -78,9 +90,21 @@ class logIn():
             print(f"|{i}| {oldPrivateData[i]} |")
             if i == 0:
                 print("\r" + "-"* os.get_terminal_size().columns, end="", flush = True)
-        select = int(input("Enter the account row number: "))
 
-        return select
+        if (input("Do you wanna add new account(y/n): ").lower() == "y"):
+            while True:
+                self.enter_api_ID()
+                self.enter_api_hash()
+                self.enter_phone_number()
+                self.enter_account_name();
+
+                self.write_private_details()
+                if (input("Do you wanna add another new account? (n) ").lower() == "n"):
+                    self.read_private_details()
+                    break
+        else:
+            select = int(input("Enter the account row number: "))
+            return select
 
 
 async def main():
@@ -90,7 +114,12 @@ async def main():
     await client.connect()
 
     if not await client.is_user_authorized():
-        await client.send_code_request(phoneNumber)
+        try:
+            await client.send_code_request(phoneNumber)
+        except NameError:
+            print("Phone number is not defined! so login again")
+            input("Press enter key to continue...")
+            login()
 
         try:
            await client.sign_in(phoneNumber, input("Enter the Login code(check you telegram): "))
@@ -105,6 +134,11 @@ async def main():
 
                 except PasswordHashInvalidError:
                     print("The password you entered is incorrect. Please try again.")
+
+        except NameError as e:
+            print(f'invalid entering "{e}"')
+            input("Press enter key to login again")
+            login()
 
     all_channels = await client (GetDialogsRequest(offset_date = None, offset_id = 0, offset_peer = InputPeerEmpty(), limit = 100, hash = 0))
    #for entity in all_channels.chats:
