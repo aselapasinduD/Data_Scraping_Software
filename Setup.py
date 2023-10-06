@@ -10,6 +10,21 @@ from telethon.tl.functions.channels import GetParticipantsRequest, InviteToChann
 from telethon.tl.types import ChannelParticipantsSearch, InputPeerEmpty, ChatForbidden, PeerChannel, InputPeerUser
 from telethon.errors import SessionPasswordNeededError, PasswordHashInvalidError, ChatAdminRequiredError
 
+def resource_path(relative_path):
+    # Get absolute path to resourece, works for dev and for PyInstaller
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS2
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# if file path not found then it will create automaticaly
+if not os.path.exists(resource_path("Data")):
+    os.makedirs(resource_path("Data"))
+if not os.path.exists(resource_path("Save CSV(default)")):
+    os.makedirs(resource_path("Save CSV(default)"))
+
 all_participants = []
 
 # this will create the title during the software runing
@@ -36,15 +51,16 @@ class logIn():
         self.__api_hash = None
         self.__phoneNumber = None
         self.__accountName = None
-        self.__private_path = ".\Data\AccountDetails.csv"
+        self.__private_path = resource_path("Data\\AccountDetails.csv")
 
     def __call__(self):
         os.system("cls")
         title = "=|Login Page|="
         halfColumns = int((os.get_terminal_size().columns - len(title)) / 2)
-        print("\r" + "-" * halfColumns + title + "-" * halfColumns , end = "", flush = True)
+        print("\r" + "-" * halfColumns + title + "-" * halfColumns , flush = True)
 
         if not os.path.isfile(self.__private_path):
+            print("It you don't have The TAPI, then you have to get TAPI using this link https://my.telegram.org/")
             self.enter_api_ID()
             self.enter_api_hash()
             self.enter_phone_number()
@@ -55,13 +71,32 @@ class logIn():
             self.read_private_details()
 
     def enter_api_ID(self):
-        self.__api_id = str(input("Enter your api ID: "))
+        while True:
+            self.__api_id = str(input("Enter your api ID: "))
+            if (self.__api_id != ""):
+                break
+            print("----|Enter a valid number|----")
     def enter_api_hash(self):
-        self.__api_hash = input("Enter your api hash: ")
+        while True:
+            self.__api_hash = input("Enter your api hash: ")
+            if (self.__api_hash != ""):
+                break
+            print("----|Enter a valid hash|----")
     def enter_phone_number(self):
-        self.__phoneNumber = str(input("Enter your phone number(9477XXXXXXX): "))
+        while True:
+            self.__phoneNumber = str(input("Enter your phone number(9477XXXXXXX): "))
+            if (self.__phoneNumber != ""):
+                if (len(self.__phoneNumber) != 11):
+                    print("----|Phone number must have 11 numbers|----")
+                    continue
+                break
+            print("----|Enter a valid phone number|----")
     def enter_account_name(self):
-        self.__accountName = input("Enter name for you account(only for recognize): ");
+        while True:
+            self.__accountName = input("Enter name for you account(only for recognize): ");
+            if (self.__accountName != ""):
+                break
+            print("----|You must enter a name for the account|----")
 
     def get_api_ID(self):
         return self.__api_id
@@ -94,9 +129,14 @@ class logIn():
             for row in csvRead:
                 oldPrivateData.append(row)
 
-        if (input("Do you wanna change the account(just press enter key for default)(y)\n: ").lower() == "y"):
+        if (input("Do you wanna change the account(just press enter for default)(y)\n: ").lower() == "y"):
             selectedNumber = self.append_private_details(oldPrivateData)
         else:
+            selectedNumber = 1
+
+        try:
+            selectedNumber = int(selectedNumber)
+        except TypeError:
             selectedNumber = 1
 
         try:
@@ -105,7 +145,7 @@ class logIn():
             self.__phoneNumber = oldPrivateData[selectedNumber][2]
             self.__accountName = oldPrivateData[selectedNumber][3]
         except IndexError as e:
-            print(f"Can't find the account: reason-{e}")
+            print(f"--|Can't find the account: reason-{e}")
             self.read_private_details()
 
 
@@ -124,7 +164,7 @@ class logIn():
                 self.enter_account_name();
 
                 self.write_private_details()
-                if (input("Do you wanna add another new account?(y): ").lower() == "y"):
+                if (input("Do you wanna add another new account?(y): ").lower() != "y"):
                     self.read_private_details()
                     break
         else:
@@ -150,7 +190,7 @@ class main():
                 await self.__client.send_code_request(login.get_phone_number())
 
             except NameError:
-                print("Phone number is not defined!")
+                print("----|Phone number is not defined!|----")
                 input("Press enter key to login again")
                 login()
 
@@ -167,7 +207,7 @@ class main():
                         print("The password you entered is incorrect. Please try again.")
 
             except NameError as e:
-                print(f'invalid entering "{e}"')
+                print(f'----|invalid entering "{e}"|----')
                 input("Press enter key to login again")
                 login()
 
@@ -268,16 +308,27 @@ class main():
             add_participants = await self.__client(GetParticipantsRequest(addChannel, ChannelParticipantsSearch(''), 0, 9999, hash=0))
     
             input("Press Enter to add users to new group")
+            alreadyUserInTheGroupCount = 0
+            addedNumberOfUserCount = 0
+            addedToFailedUserCount = 0
             for user in all_participants:
                 createTitle("line")
                 if user.id in add_participants.users:
                     print(f"|ID: {user.id}| Username: {user.username}| Status: User is already in the Group/Channel")
+                    alreadyUserInTheGroupCount += 1
                 else:
                     try:
                         await self.__client(InviteToChannelRequest(addChannel, [user.id]))
                         print(f"|ID: {user.id}| Username: {user.username}| Status: Added successfully")
+                        addedNumberOfUser += 1
                     except Exception as e:
                         print(f"|ID: {user.id}| Username: {user.username}| Status: Could not Add User| Reason: {str(e)}")
+                        addedToFailedUserNumber += 1
+
+            createTitle("line")
+            print(f"    Already User in the Group Users Count: {alreadyUserInTheGroupCount}")
+            print(f"    Added Users Count: {addedNumberOfUserCount}")
+            print(f"    Added to Failed Users Count: {addedToFailedUserCount}")
 
     async def get_Users(self, users):
         usersFromCSVfile = []
@@ -285,15 +336,15 @@ class main():
             if (user != 0):
                 usersFromCSVfile.append(await self.__client.get_entity(InputPeerUser(int(users[user][0]), int(users[user][1]))))
         all_participants.extend(usersFromCSVfile)
-        print("successfully readed CSV file")
+        print("----|Successfully get users data from telegram.|----")
         print(f"    Participant Count From CSV file: {len(usersFromCSVfile)}")
 
 # saveCSV is use to save all users data comming from telegrame
 #   Default path set to .\Save CSV(default) folder
-def saveCSV(fileName, users, path = ".\Save CSV(default)"):
+def saveCSV(fileName, users, path = "Save CSV(default)"):
 
     userData = []
-    filePath = os.path.join(path, str(fileName) + ".csv")
+    filePath = os.path.join(resource_path(path), str(fileName) + ".csv")
 
     if not os.path.isfile(filePath):
         userData.append(["ID","Access Hash", "Username", "Phone Number", "First Name", "Last Name"])
@@ -302,30 +353,57 @@ def saveCSV(fileName, users, path = ".\Save CSV(default)"):
             userData.append([user.id, user.access_hash, user.username, user.phone, user.first_name, user.last_name])
 
         # writing to CSV new File
-        with open(filePath, "w", encoding = "utf-8", newline = "") as csvUserNewFile:
-            csvWrite = csv.writer(csvUserNewFile)
-            csvWrite.writerows(userData)
+        try:
+            with open(filePath, "w", encoding = "utf-8", newline = "") as csvUserNewFile:
+                csvWrite = csv.writer(csvUserNewFile)
+                csvWrite.writerows(userData)
+        except FileNotFoundError:
+            print(f"----|Can't find the file in this {filePath}")
+            login()
 
-        print(f"Successfully write user data to new '{filePath}'")
+        print(f"----|Successfully write user data to new '{filePath}'")
     else:
 
         for user in users:
             userData.append([user.id, user.access_hash, user.username, user.phone, user.first_name, user.last_name])
 
-        with open(filePath, "a", encoding = "utf-8", newline = "") as csvUserOldFile:
-            csvWrite = csv.writer(csvUserOldFile)
-            csvWrite.writerows(userData)
+        try:
+            with open(filePath, "a", encoding = "utf-8", newline = "") as csvUserOldFile:
+                csvWrite = csv.writer(csvUserOldFile)
+                csvWrite.writerows(userData)
+        except FileNotFoundError:
+            print(f"----|Can't find the file in this {filePath}")
+            login()
 
-        print(f"Successfully write user data to old '{filePath}'")
+        print(f"----|Successfully write user data to old '{filePath}'")
 
-async def readCSV(fileName, tlSession = "" , path = ".\Save CSV(default)"):
-    filePath = os.path.join( path, str(fileName) + ".csv")
+async def readCSV(fileName, tlSession = "" , path = "Save CSV(default)"):
+    filePath = os.path.join( resource_path(path), str(fileName) + ".csv")
     usersDetailsFromCSVfile = []
 
-    with open(filePath, "r", encoding = "utf-8") as readCSVfiles:
-        csvRead = csv.reader(readCSVfiles)
-        for row in csvRead:
-            usersDetailsFromCSVfile.append(row)
+    try:
+        with open(filePath, "r", encoding = "utf-8") as readCSVfiles:
+            csvRead = csv.reader(readCSVfiles)
+            for row in csvRead:
+                usersDetailsFromCSVfile.append(row)
+        print(f"----|Successfully readed user data from '{filePath}'|----")
+    except FileNotFoundError:
+        print(f"----|Can't find the file in this {filePath}|----")
+        print("--|Try Again|--")
+
+        while True:
+            filename = input("-|Enter the CSV file name(you don't want to include .csv)\n: ")
+            if (filename != ""):
+                break
+            print("----|Enter a valid file name|----")
+
+        filePath = input("-|Enter the CSV file path(just Enter for the default path)\n:")
+
+        if (filePath == ""):
+            await readCSV(filename, tlSession)
+        else:
+            await readCSV(filename, tlSession, filePath)
+        return
 
     if (tlSession != ""):
         await tlSession.get_Users(usersDetailsFromCSVfile)
@@ -371,6 +449,7 @@ async def dashboard(telegram):
                 await telegram.get_all_channel_group()
                 createTitle("line")
             case "3":
+                print("--|This feature under construction|--")
                 input("Enter for the continue")
             case "4":
                 createTitle("title", "Get Users From Channel or Group")
@@ -383,21 +462,33 @@ async def dashboard(telegram):
                 createTitle("line")
             case "6":
                 createTitle("title", "Get Users From CSV File")
-                filename = input("-|Enter the CSV file name(you don't want to include .csv)\n: ")
+
+                while True:
+                    filename = input("-|Enter the CSV file name(you don't want to include .csv)\n: ")
+                    if (filename != ""):
+                        break
+                    print("----|Enter a valid file name|----")
+
                 filePath = input("-|Enter the CSV file path(just Enter for the default path)\n:")
+
                 if (filePath == ""):
                     await readCSV(filename, telegram)
                 else:
                     await readCSV(filename, telegram, filePath)
+
                 createTitle("line")
                 print(f"    Users Count: {len(all_participants)}")
             case "7":
                 login()
-                input("Enter for the contie.")
+                input("Press enter to contiune.")
                 await dashboard(telegram)
             case "exit" | "e" | "8":
-                await saveSessionUserCount()
+                if (len(all_participants) != 0):
+                    await saveSessionUserCount()
+                input("Press Enter to Exit")
                 exit()
+            case _:
+                print("--|Invalid Entry: Enter the correct row number|--")
 
 # initialize the software functions
 
