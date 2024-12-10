@@ -1,1 +1,2 @@
 telethon==1.30.3
+pyinstaller==6.11.1
