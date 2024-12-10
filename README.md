@@ -26,7 +26,8 @@ This CLI tool, developed using Python and the Telethon library, provides robust 
 │   ├── Pipfile.lock
 │   ├── README.md
 │   ├── requirements.txt
-└── └── setup.py
+│   ├── setup.py
+└── └── setup.spec
 ```
 
 ### How To Run
@@ -53,7 +54,7 @@ pyinstaller setup.spec
 ```
 or, to generate the  `.exe`  file with more control, you can use the following command:
 ```bash
-pyinstaller --name setup --onefile --windowed --icon=icon.ico setup.py
+pyinstaller --name setup --onefile --icon=icon.ico setup.py
 ```
 You can customize the app's icon by replacing it with your desired icon file.
 
